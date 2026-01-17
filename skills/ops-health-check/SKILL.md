@@ -1,17 +1,19 @@
 ---
 name: ops-health-check
-description: "Comprehensive system health monitoring for Linux hosts. Use for: system resources check (CPU, memory, disk, network), service status verification, quick security checks (mining processes, suspicious files), health report generation. Triggers: health check, system status, check host, monitor server, server health"
+description: "Comprehensive system health monitoring for Linux hosts. Use for: system resources check (CPU, memory, disk, network), service status verification, security checks (mining, malware, intrusions), deep security analysis, health report generation. Triggers: health check, system status, check host, monitor server, server health, security check"
 ---
 
 # Ops Health Check
 
 ## Overview
 
-Perform automated health checks on Linux hosts to monitor system resources, service status, and security indicators. Generate Markdown reports with status indicators (OK/WARNING/CRITICAL) based on configurable thresholds.
+Perform automated health checks on Linux hosts to monitor system resources, service status, and security indicators. Generate Markdown reports with status indicators (✅正常/⚠️警告/❌严重) based on configurable thresholds.
+
+Includes both **basic health check** and **deep security check** capabilities.
 
 ## Quick Start
 
-To check a single host:
+### Basic Health Check
 
 ```bash
 # Remote host check via SSH
@@ -21,10 +23,24 @@ ssh <host-ip> 'bash -s' < scripts/health-check.sh
 ssh 192.168.0.42 'bash -s' < scripts/ops-health-check/scripts/health-check.sh
 ```
 
-To check local host:
+### Deep Security Check
 
 ```bash
+# Run comprehensive security analysis
+ssh <host-ip> 'bash -s' < scripts/security-check.sh
+
+# Example
+ssh 192.168.0.42 'bash -s' < scripts/ops-health-check/scripts/security-check.sh
+```
+
+### Local Host Check
+
+```bash
+# Basic check
 bash scripts/ops-health-check/scripts/health-check.sh
+
+# Security check
+bash scripts/ops-health-check/scripts/security-check.sh
 ```
 
 ## What Gets Checked
@@ -40,17 +56,50 @@ bash scripts/ops-health-check/scripts/health-check.sh
 - Failed services count
 - (Requires systemd)
 
-### Security
+### Security (Basic)
 - Mining process detection (xmrig, minerd, cpuminer)
 - Executable files in /tmp
 - Recent failed login attempts
 
+### Deep Security Check
+
+Run `scripts/security-check.sh` for comprehensive security analysis:
+
+**异常进程检测 (Anomalous Process Detection)**
+- High CPU/memory usage processes
+- Mining processes (extended detection list)
+- Suspicious process names
+- Processes running from /tmp or /dev/shm
+
+**网络连接安全 (Network Security)**
+- Reverse shell detection
+- High-risk port monitoring
+- External connection statistics
+
+**文件系统安全 (File System Security)**
+- Recently modified files (configurable time range)
+- SUID/SGID executable files
+- Executable files in temp directories
+- Ransomware indicators (.encrypted, .locked, .crypto)
+
+**账户和登录安全 (Account & Login Security)**
+- Recent login history (last 10 logins)
+- Failed login statistics
+- Current logged-in users
+- New user detection (last 30 days)
+- Sudo usage logs
+
+**系统完整性 (System Integrity)**
+- Recent /etc directory changes (last 7 days)
+- Critical config file permissions
+- Key file ownership verification
+
 ## Report Format
 
-Output is Markdown with:
-- **OK** (green) - All metrics within normal thresholds
-- **WARNING** (yellow) - Exceeds warning threshold
-- **CRITICAL** (red) - Exceeds critical threshold
+Output is Markdown with emoji status indicators:
+- **✅正常** (OK) - All metrics within normal thresholds
+- **⚠️警告** (WARNING) - Exceeds warning threshold, needs attention
+- **❌严重** (CRITICAL) - Exceeds critical threshold, immediate action required
 
 ## Customizing Thresholds
 
@@ -80,10 +129,16 @@ When a user requests health checks or system monitoring:
 
 ### Common Workflows
 
-**Single host check**:
+**Single host basic check**:
 ```
 User: "Check the health of 192.168.0.42"
 → Execute: ssh 192.168.0.42 'bash -s' < scripts/health-check.sh
+```
+
+**Single host security check**:
+```
+User: "Do a security scan of 192.168.0.42"
+→ Execute: ssh 192.168.0.42 'bash -s' < scripts/security-check.sh
 ```
 
 **Multiple hosts**:
@@ -101,16 +156,43 @@ User: "Save the health report to a file"
 
 ## Notes
 
-- Script uses standard Linux commands: `free`, `df`, `uptime`, `ss`, `systemctl`
+- Script uses standard Linux commands: `free`, `df`, `uptime`, `ss`, `systemctl`, `last`, `find`
 - Requires Bash and basic Unix utilities
-- Color codes work in terminal; plain text in files
-- For Docker, advanced security checks, or JSON output, see future versions
+- Emoji status indicators work everywhere (terminal, files, web)
+- Deep security check may take 30-60 seconds depending on system size
+- Security check requires root privileges for complete analysis
 
-## Limitations (MVP)
+## Security Check Configuration
 
-This MVP version focuses on basic system health. Future versions will add:
-- Docker container monitoring
-- Multi-host configuration files
-- JSON output format
-- Advanced security checks
-- Historical tracking
+Customize security check behavior:
+
+```bash
+# Check specific directories (default: /tmp /dev/shm /var/tmp)
+CHECK_DIRS="/tmp /var/tmp /home"
+
+# Set time range for recent file checks (default: 24 hours)
+RECENT_HOURS=48
+
+# Set thresholds for suspicious processes
+MAX_CPU_PERCENT=80
+MAX_MEM_PERCENT=50
+```
+
+## Limitations
+
+Current version includes:
+- ✅ Basic system health monitoring
+- ✅ Deep security checks
+- ✅ Markdown reports with emoji status
+- ⚠️ Docker monitoring (partial - basic container info in processes)
+- ❌ Multi-host configuration files
+- ❌ JSON output format
+- ❌ Historical tracking
+- ❌ Alert notifications
+
+Future versions will add:
+- Docker container monitoring (detailed stats, images, volumes)
+- Multi-host configuration files (YAML-based)
+- JSON output format for programmatic processing
+- Historical tracking and trend analysis
+- Alert notifications (email, DingTalk, WeChat)
