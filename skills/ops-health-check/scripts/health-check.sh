@@ -13,12 +13,6 @@ MEMORY_CRITICAL=${MEMORY_CRITICAL:-90}
 CPU_LOAD_WARNING=${CPU_LOAD_WARNING:-200}   # 使用整数 (2.0 * 100)
 CPU_LOAD_CRITICAL=${CPU_LOAD_CRITICAL:-500} # 使用整数 (5.0 * 100)
 
-# 输出颜色
-RED='\033[0;31m'
-YELLOW='\033[1;33m'
-GREEN='\033[0;32m'
-NC='\033[0m' # 无颜色
-
 # 检查状态函数
 check_status() {
     local value=$1
@@ -26,11 +20,11 @@ check_status() {
     local critical=$3
 
     if [ "$value" -ge "$critical" ]; then
-        echo -e "${RED}严重${NC}"
+        echo "❌严重"
     elif [ "$value" -ge "$warning" ]; then
-        echo -e "${YELLOW}警告${NC}"
+        echo "⚠️警告"
     else
-        echo -e "${GREEN}正常${NC}"
+        echo "✅正常"
     fi
 }
 
