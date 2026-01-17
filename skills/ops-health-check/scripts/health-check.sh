@@ -1,59 +1,59 @@
 #!/bin/bash
 
-# Health Check Script for Linux Hosts
-# Checks basic system resources: uptime, load, memory, disk, network
+# 健康检查脚本 - Linux 主机
+# 检查基础系统资源：运行时间、负载、内存、磁盘、网络
 
 set -euo pipefail
 
-# Default thresholds
+# 默认阈值
 DISK_WARNING=${DISK_WARNING:-50}
 DISK_CRITICAL=${DISK_CRITICAL:-80}
 MEMORY_WARNING=${MEMORY_WARNING:-70}
 MEMORY_CRITICAL=${MEMORY_CRITICAL:-90}
-CPU_LOAD_WARNING=${CPU_LOAD_WARNING:-200}   # Using integer (2.0 * 100)
-CPU_LOAD_CRITICAL=${CPU_LOAD_CRITICAL:-500} # Using integer (5.0 * 100)
+CPU_LOAD_WARNING=${CPU_LOAD_WARNING:-200}   # 使用整数 (2.0 * 100)
+CPU_LOAD_CRITICAL=${CPU_LOAD_CRITICAL:-500} # 使用整数 (5.0 * 100)
 
-# Colors for output
+# 输出颜色
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
-NC='\033[0m' # No Color
+NC='\033[0m' # 无颜色
 
-# Function to check status
+# 检查状态函数
 check_status() {
     local value=$1
     local warning=$2
     local critical=$3
 
     if [ "$value" -ge "$critical" ]; then
-        echo -e "${RED}CRITICAL${NC}"
+        echo -e "${RED}严重${NC}"
     elif [ "$value" -ge "$warning" ]; then
-        echo -e "${YELLOW}WARNING${NC}"
+        echo -e "${YELLOW}警告${NC}"
     else
-        echo -e "${GREEN}OK${NC}"
+        echo -e "${GREEN}正常${NC}"
     fi
 }
 
-# Start output
-echo "# System Health Check Report"
+# 开始输出
+echo "# 系统健康检查报告"
 echo ""
-echo "**Check Time**: $(date '+%Y-%m-%d %H:%M:%S')"
-echo "**Host**: $(hostname)"
-echo "**IP**: $(hostname -I | awk '{print $1}')"
+echo "**检查时间**: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "**主机**: $(hostname)"
+echo "**IP地址**: $(hostname -I | awk '{print $1}')"
 echo ""
 
-# 1. System Uptime and Load
-echo "## 💻 System Overview"
+# 1. 系统运行时间和负载
+echo "## 💻 系统概览"
 echo ""
-echo "### Uptime & Load"
+echo "### 运行时间与负载"
 uptime_output=$(uptime)
 uptime_clean=$(echo "$uptime_output" | sed 's/^ *//g')
-echo "- **Uptime**: $(uptime -p 2>/dev/null || echo "$uptime_clean" | awk -F'up ' '{print $2}' | awk -F',' '{print $1}')"
-echo "- **Load Average**: $(echo "$uptime_clean" | awk -F'load average:' '{print $2}' | sed 's/^ *//g')"
+echo "- **运行时间**: $(uptime -p 2>/dev/null || echo "$uptime_clean" | awk -F'up ' '{print $2}' | awk -F',' '{print $1}')"
+echo "- **平均负载**: $(echo "$uptime_clean" | awk -F'load average:' '{print $2}' | sed 's/^ *//g')"
 echo ""
 
-# 2. Memory Check
-echo "### Memory Usage"
+# 2. 内存检查
+echo "### 内存使用"
 memory_info=$(free -m | grep Mem)
 mem_total=$(echo $memory_info | awk '{print $2}')
 mem_used=$(echo $memory_info | awk '{print $3}')
@@ -71,15 +71,15 @@ else
 fi
 
 mem_status=$(check_status ${mem_percent%.*} $MEMORY_WARNING $MEMORY_CRITICAL)
-echo "- **Memory**: ${mem_used}MB / ${mem_total}MB (${mem_percent}%) - $mem_status"
-echo "- **Swap**: ${swap_used}MB / ${swap_total}MB (${swap_percent}%)"
+echo "- **内存**: ${mem_used}MB / ${mem_total}MB (${mem_percent}%) - $mem_status"
+echo "- **交换分区**: ${swap_used}MB / ${swap_total}MB (${swap_percent}%)"
 echo ""
 
-# 3. Disk Check
-echo "### Disk Space"
+# 3. 磁盘检查
+echo "### 磁盘空间"
 echo ""
-echo "| Filesystem | Size | Used | Available | Use% | Mount Point | Status |"
-echo "|------------|------|------|-----------|-----|-------------|--------|"
+echo "| 文件系统 | 容量 | 已用 | 可用 | 使用率 | 挂载点 | 状态 |"
+echo "|---------|------|------|------|--------|--------|------|"
 
 df -h | grep -vE '^Filesystem|tmpfs|overlay|none' | while read line; do
     filesystem=$(echo $line | awk '{print $1}')
@@ -94,60 +94,60 @@ df -h | grep -vE '^Filesystem|tmpfs|overlay|none' | while read line; do
 done
 echo ""
 
-# 4. Network Connections
-echo "### Network"
+# 4. 网络连接
+echo "### 网络"
 echo ""
 conn_count=$(ss -tun 2>/dev/null | wc -l)
 listening_count=$(ss -tln 2>/dev/null | grep LISTEN | wc -l)
-echo "- **Active Connections**: $conn_count"
-echo "- **Listening Ports**: $listening_count"
+echo "- **活动连接数**: $conn_count"
+echo "- **监听端口数**: $listening_count"
 echo ""
 
-# 5. Running Services Summary
-echo "## 🔧 Services Summary"
+# 5. 运行服务摘要
+echo "## 🔧 服务状态"
 echo ""
 if command -v systemctl &> /dev/null; then
     failed_count=$(systemctl list-units --type=service --state=failed 2>/dev/null | grep -c "loaded" || echo 0)
     running_count=$(systemctl list-units --type=service --state=running 2>/dev/null | grep -c "loaded" || echo 0)
-    echo "- **Running Services**: $running_count"
-    echo "- **Failed Services**: $failed_count"
+    echo "- **运行中的服务**: $running_count"
+    echo "- **失败的服务**: $failed_count"
 else
-    echo "Service status not available (systemd not found)"
+    echo "服务状态不可用（未找到 systemd）"
 fi
 echo ""
 
-# 6. Security Quick Check
-echo "## 🔒 Quick Security Check"
+# 6. 安全快速检查
+echo "## 🔒 安全检查"
 echo ""
 
-# Check for suspicious processes
+# 检查可疑进程
 mining_procs=$(ps aux 2>/dev/null | grep -E 'xmrig|minerd|cpuminer' | grep -v grep || true)
 if [ -n "$mining_procs" ]; then
-    echo "⚠️ **WARNING**: Potential mining processes detected"
+    echo "⚠️ **警告**: 检测到潜在的挖矿进程"
 else
-    echo "✅ **OK**: No mining processes detected"
+    echo "✅ **正常**: 未检测到挖矿进程"
 fi
 
-# Check for executables in /tmp
+# 检查 /tmp 中的可执行文件
 tmp_exec=$(find /tmp -type f -executable 2>/dev/null | wc -l)
 if [ "$tmp_exec" -gt 0 ]; then
-    echo "⚠️ **WARNING**: $tmp_exec executable files in /tmp"
+    echo "⚠️ **警告**: /tmp 中发现 $tmp_exec 个可执行文件"
 else
-    echo "✅ **OK**: No executable files in /tmp"
+    echo "✅ **正常**: /tmp 中无可执行文件"
 fi
 
-# Check recent failed logins
+# 检查最近的失败登录
 if [ -f /var/log/auth.log ]; then
     failed_logins=$(grep "Failed password" /var/log/auth.log 2>/dev/null | tail -10 | wc -l || echo 0)
-    echo "- **Recent Failed Logins**: $failed_logins (last 10 in auth.log)"
+    echo "- **最近失败登录**: $failed_logins 次（auth.log 中最近 10 条）"
 elif [ -f /var/log/secure ]; then
     failed_logins=$(grep "Failed password" /var/log/secure 2>/dev/null | tail -10 | wc -l || echo 0)
-    echo "- **Recent Failed Logins**: $failed_logins (last 10 in secure)"
+    echo "- **最近失败登录**: $failed_logins 次（secure 中最近 10 条）"
 fi
 echo ""
 
-# Footer
+# 页脚
 echo "---"
 echo ""
-echo "**Report Generated**: $(date '+%Y-%m-%d %H:%M:%S')"
-echo "**Check Tool**: ops-health-check v1.0 (MVP)"
+echo "**报告生成时间**: $(date '+%Y-%m-%d %H:%M:%S')"
+echo "**检查工具**: 运维健康检查 v1.0 (MVP)"
