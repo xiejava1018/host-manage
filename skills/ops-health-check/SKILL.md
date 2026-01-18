@@ -1,15 +1,15 @@
 ---
 name: ops-health-check
-description: "Comprehensive system health monitoring for Linux hosts. Use for: system resources check (CPU, memory, disk, network), service status verification, security checks (mining, malware, intrusions), deep security analysis, health report generation. Triggers: health check, system status, check host, monitor server, server health, security check"
+description: "Comprehensive system health monitoring for Linux hosts. Use for: system resources check (CPU, memory, disk, network), Docker monitoring (containers, images, volumes), service status verification, security checks (mining, malware, intrusions), deep security analysis, health report generation. Triggers: health check, system status, check host, monitor server, docker status, container check, security check"
 ---
 
 # Ops Health Check
 
 ## Overview
 
-Perform automated health checks on Linux hosts to monitor system resources, service status, and security indicators. Generate Markdown reports with status indicators (✅正常/⚠️警告/❌严重) based on configurable thresholds.
+Perform automated health checks on Linux hosts to monitor system resources, Docker containers, service status, and security indicators. Generate **Markdown** and **JSON** format reports with status indicators (✅正常/⚠️警告/❌严重) based on configurable thresholds.
 
-Includes both **basic health check** and **deep security check** capabilities.
+Includes **basic health check**, **deep security check**, and **Docker monitoring** capabilities with dual-format output (Markdown + JSON).
 
 ## Quick Start
 
@@ -33,6 +33,16 @@ ssh <host-ip> 'bash -s' < scripts/security-check.sh
 ssh 192.168.0.42 'bash -s' < scripts/ops-health-check/scripts/security-check.sh
 ```
 
+### Docker Monitoring
+
+```bash
+# Check Docker containers, images, volumes
+ssh <host-ip> 'bash -s' < scripts/docker-check.sh
+
+# Example
+ssh 192.168.0.42 'bash -s' < scripts/ops-health-check/scripts/docker-check.sh
+```
+
 ### Local Host Check
 
 ```bash
@@ -41,6 +51,9 @@ bash scripts/ops-health-check/scripts/health-check.sh
 
 # Security check
 bash scripts/ops-health-check/scripts/security-check.sh
+
+# Docker check
+bash scripts/ops-health-check/scripts/docker-check.sh
 ```
 
 ## What Gets Checked
@@ -55,6 +68,32 @@ bash scripts/ops-health-check/scripts/security-check.sh
 - Running systemd services count
 - Failed services count
 - (Requires systemd)
+
+### Docker Monitoring
+Run `scripts/docker-check.sh` for comprehensive Docker monitoring:
+
+**Docker Service**
+- Service status and version
+- Root directory and system info
+
+**容器状态概览 (Container Status)**
+- Total, running, and stopped container counts
+- Detailed container list with status
+- Resource usage Top 5 (CPU, memory)
+
+**镜像信息 (Image Information)**
+- Total image count
+- Dangling (unused) image detection
+- Image list with sizes
+
+**网络和卷 (Networks and Volumes)**
+- Network list and count
+- Volume list and count
+- Unused volume detection
+
+**存储空间 (Storage)**
+- System storage usage (images, containers, volumes, build cache)
+- Cleanup recommendations
 
 ### Security (Basic)
 - Mining process detection (xmrig, minerd, cpuminer)
@@ -96,10 +135,62 @@ Run `scripts/security-check.sh` for comprehensive security analysis:
 
 ## Report Format
 
-Output is Markdown with emoji status indicators:
+### Dual Format Output
+
+Each check generates **two** report files automatically:
+
+1. **Markdown** (.md) - Human-readable format with emoji status indicators
+2. **JSON** (.json) - Machine-processable format for APIs and monitoring systems
+
+Example output files:
+```
+health-reports/
+├── health-check-192.168.0.42-20250118-162008.md
+└── health-check-192.168.0.42-20250118-162008.json
+```
+
+### Status Indicators
+
+Both formats use consistent status indicators:
 - **✅正常** (OK) - All metrics within normal thresholds
 - **⚠️警告** (WARNING) - Exceeds warning threshold, needs attention
 - **❌严重** (CRITICAL) - Exceeds critical threshold, immediate action required
+
+### JSON Structure
+
+```json
+{
+  "summary": {
+    "host": {
+      "hostname": "server-01",
+      "ip": "192.168.0.42",
+      "check_time": "2025-01-18T16:20:08+0800"
+    },
+    "overall_status": "ok",
+    "status_counts": {
+      "ok": 15,
+      "warning": 2,
+      "critical": 0
+    }
+  },
+  "details": {
+    "system": { ... },
+    "memory": { ... },
+    "disk": [ ... ],
+    "services": { ... }
+  },
+  "metadata": {
+    "check_version": "1.0",
+    "tool_version": "ops-health-check v1.0",
+    "thresholds": { ... }
+  }
+}
+```
+
+The JSON format includes:
+- **summary**: Quick overview for alerting and trend analysis
+- **details**: Complete system metrics in hierarchical structure
+- **metadata**: Check configuration and version information
 
 ## Customizing Thresholds
 
@@ -127,6 +218,36 @@ When a user requests health checks or system monitoring:
 3. **Review the report** - Check for WARNING or CRITICAL indicators
 4. **Take action** if any metrics exceed thresholds
 
+### Using JSON Output
+
+The JSON format enables programmatic analysis and integration:
+
+```bash
+# Query overall status
+jq '.summary.overall_status' health-reports/*.json
+
+# Extract memory usage percentage
+jq '.details.memory.used_percent' health-reports/health-check-*.json
+
+# Find all hosts with warnings
+for json in health-reports/*.json; do
+  hostname=$(jq -r '.summary.host.hostname' "$json")
+  status=$(jq -r '.summary.overall_status' "$json")
+  if [ "$status" != "ok" ]; then
+    echo "$hostname: $status"
+  fi
+done
+
+# Send to monitoring API
+curl -X POST http://monitoring/api/metrics \
+  -H "Content-Type: application/json" \
+  -d @health-reports/health-check-*.json
+
+# Generate summary table
+jq -r '[.summary.host.hostname, .summary.overall_status] | @tsv' \
+  health-reports/*.json
+```
+
 ### Common Workflows
 
 **Single host basic check**:
@@ -139,6 +260,12 @@ User: "Check the health of 192.168.0.42"
 ```
 User: "Do a security scan of 192.168.0.42"
 → Execute: ssh 192.168.0.42 'bash -s' < scripts/security-check.sh
+```
+
+**Single host Docker check**:
+```
+User: "Check Docker on 192.168.0.42"
+→ Execute: ssh 192.168.0.42 'bash -s' < scripts/docker-check.sh
 ```
 
 **Multiple hosts**:
@@ -156,8 +283,9 @@ User: "Save the health report to a file"
 
 ## Notes
 
-- Script uses standard Linux commands: `free`, `df`, `uptime`, `ss`, `systemctl`, `last`, `find`
+- Script uses standard Linux commands: `free`, `df`, `uptime`, `ss`, `systemctl`, `last`, `find`, `docker`
 - Requires Bash and basic Unix utilities
+- Docker check requires Docker to be installed and user needs Docker access permissions
 - Emoji status indicators work everywhere (terminal, files, web)
 - Deep security check may take 30-60 seconds depending on system size
 - Security check requires root privileges for complete analysis
@@ -183,16 +311,14 @@ MAX_MEM_PERCENT=50
 Current version includes:
 - ✅ Basic system health monitoring
 - ✅ Deep security checks
+- ✅ Docker container monitoring (detailed stats, images, volumes, networks)
 - ✅ Markdown reports with emoji status
-- ⚠️ Docker monitoring (partial - basic container info in processes)
+- ✅ JSON output format for programmatic processing
 - ❌ Multi-host configuration files
-- ❌ JSON output format
 - ❌ Historical tracking
 - ❌ Alert notifications
 
 Future versions will add:
-- Docker container monitoring (detailed stats, images, volumes)
 - Multi-host configuration files (YAML-based)
-- JSON output format for programmatic processing
 - Historical tracking and trend analysis
 - Alert notifications (email, DingTalk, WeChat)
