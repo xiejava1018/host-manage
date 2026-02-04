@@ -1,0 +1,59 @@
+# 邮件配置模板
+# 复制此文件到 ~/.config/ops-health-check/email.conf 并填入真实配置
+#
+# 使用方法：
+#   1. mkdir -p ~/.config/ops-health-check
+#   2. cp email.conf.example ~/.config/ops-health-check/email.conf
+#   3. 编辑 ~/.config/ops-health-check/email.conf 填入真实信息
+#   4. chmod 600 ~/.config/ops-health-check/email.conf
+
+# ===============================
+# SMTP服务器配置
+# ===============================
+
+# QQ邮箱示例
+SMTP_SERVER=smtp.qq.com
+SMTP_PORT=465
+USE_SSL=true
+
+# 其他邮箱示例：
+# Gmail: smtp.gmail.com:587 (STARTTLS)
+# Outlook: smtp.office365.com:587
+# 163邮箱: smtp.163.com:465
+# 企业邮箱：请咨询您的邮件服务提供商
+
+# ===============================
+# 发件人配置
+# ===============================
+
+# 发件人邮箱地址
+SENDER_EMAIL=yourname@qq.com
+
+# 发件人显示名称
+SENDER_NAME=系统监控
+
+# ===============================
+# 认证信息
+# ===============================
+
+# 邮箱授权码（不是登录密码！）
+# 
+# QQ邮箱获取方式：
+#   1. 登录QQ邮箱网页版
+#   2. 点击"设置" → "账户"
+#   3. 找到"POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV服务"
+#   4. 开启"SMTP服务"
+#   5. 生成授权码（需要手机验证）
+#
+# Gmail获取方式：
+#   1. 开启两步验证
+#   2. 生成应用专用密码
+#
+AUTH_CODE=your_auth_code_here
+
+# ===============================
+# 收件人配置
+# ===============================
+
+# 默认收件人（可以通过命令行参数覆盖）
+DEFAULT_RECIPIENT=user@example.com

@@ -56,6 +56,84 @@ bash scripts/ops-health-check/scripts/security-check.sh
 bash scripts/ops-health-check/scripts/docker-check.sh
 ```
 
+### Health Check with Auto Email
+
+```bash
+# Remote check with automatic email report
+scripts/ops-health-check/scripts/remote-check-and-email.sh <host-ip>
+
+# Example: Basic health check + email
+scripts/ops-health-check/scripts/remote-check-and-email.sh 192.168.0.42
+
+# Health + Security + Docker + email
+scripts/ops-health-check/scripts/remote-check-and-email.sh 192.168.0.42 --security --docker
+
+# Specify recipient
+scripts/ops-health-check/scripts/remote-check-and-email.sh 192.168.0.42 --recipient admin@example.com
+```
+
+**⚠️ Security Notice:**
+
+Email configuration contains sensitive information (authorization codes) and should **NEVER** be committed to version control. The email configuration is stored in:
+- `~/.config/ops-health-check/email.conf` (user home directory, outside project)
+- Protected by file permissions (600)
+- Listed in `.gitignore` to prevent accidental commits
+
+**Email Setup (One-time Configuration):**
+
+**Option 1: Interactive Setup Wizard (Recommended)**
+
+```bash
+# Run the setup wizard
+bash skills/ops-health-check/scripts/setup-email.sh
+```
+
+The wizard will guide you through:
+1. SMTP server selection (QQ, Gmail, Outlook, 163, custom)
+2. Sender email configuration
+3. Authorization code setup
+4. Default recipient configuration
+5. Optional test email
+
+**Option 2: Manual Configuration**
+
+1. Copy the template:
+```bash
+mkdir -p ~/.config/ops-health-check
+cp skills/ops-health-check/email.conf.example ~/.config/ops-health-check/email.conf
+chmod 600 ~/.config/ops-health-check/email.conf
+```
+
+2. Edit the configuration file with your actual settings:
+```bash
+nano ~/.config/ops-health-check/email.conf
+```
+
+3. Replace the placeholder values:
+- `yourname@qq.com` → Your email address
+- `your_auth_code_here` → Your email authorization code (NOT login password)
+- `user@example.com` → Default recipient email
+
+**Getting Authorization Codes:**
+
+- **QQ Mail**: Settings → Account → Enable SMTP → Generate Auth Code
+- **Gmail**: Enable 2FA → Generate App-Specific Password
+- **Outlook**: Account Security → Create App Password
+- **163 Mail**: Settings → POP3/SMTP/IMAP → SMTP Auth Code
+
+**Test Email Configuration:**
+
+```bash
+# Create a test report
+echo "Test report" > /tmp/test.txt
+
+# Send test email
+python3 ~/.config/ops-health-check/send_email_auto.py 'Test' /tmp/test.txt
+
+# Or use shortcut command
+send-health-report /tmp/test.txt 'Test Email'
+```
+
 ## What Gets Checked
 
 ### System Resources
@@ -314,11 +392,12 @@ Current version includes:
 - ✅ Docker container monitoring (detailed stats, images, volumes, networks)
 - ✅ Markdown reports with emoji status
 - ✅ JSON output format for programmatic processing
+- ✅ Automatic email notifications with configurable SMTP
 - ❌ Multi-host configuration files
 - ❌ Historical tracking
-- ❌ Alert notifications
+- ❌ Alert notifications (DingTalk, WeChat - email only currently)
 
 Future versions will add:
 - Multi-host configuration files (YAML-based)
 - Historical tracking and trend analysis
-- Alert notifications (email, DingTalk, WeChat)
+- Additional notification channels (DingTalk, WeChat, Webhooks)
